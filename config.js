@@ -20,10 +20,11 @@ window.STORE_CONFIG = {
   // If true, only names listed in "members" can order (a simple guest list).
   requireListedName: false,
 
-  // Your merchandise. Each id must be unique and never change once orders exist.
+  // Your merchandise. Add  sizes: ["S","M","L"]  to any item that needs a size
+  // (leave it out for one-size items). Each id must be unique and never change once orders exist.
   items: [
-    { id: "tshirt",  name: "T-Shirt",      price: 18, desc: "Soft cotton, unisex fit" },
-    { id: "hoodie",  name: "Hoodie",       price: 38, desc: "Midweight pullover" },
+    { id: "tshirt",  name: "T-Shirt",      price: 18, sizes: ["S", "M", "L", "XL"], desc: "Soft cotton, unisex fit" },
+    { id: "hoodie",  name: "Hoodie",       price: 38, sizes: ["S", "M", "L", "XL"], desc: "Midweight pullover" },
     { id: "cap",     name: "Baseball Cap", price: 15, desc: "Adjustable strap" },
     { id: "mug",     name: "Ceramic Mug",  price: 12, desc: "12 oz, dishwasher safe" },
     { id: "tote",    name: "Tote Bag",     price: 10, desc: "Heavy canvas" },

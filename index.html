@@ -28,6 +28,7 @@ input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:
 .stepper{display:flex;align-items:center;gap:8px;margin-top:auto}
 .stepper button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:18px;cursor:pointer}
 .stepper button:disabled{opacity:.35;cursor:not-allowed}
+.stepper.sized{margin-top:0}.stepper.sized .sz{width:34px;font-weight:600}.stepper:first-of-type{margin-top:auto}
 .q{min-width:24px;text-align:center;font-weight:600}
 .side{position:sticky;top:12px}
 .meter{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0 6px}
@@ -90,7 +91,17 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   function key(n){return n.trim().toLowerCase().replace(/\s+/g," ");}
   function listed(n){return Object.prototype.hasOwnProperty.call(C.members||{},key(n));}
   function budget(){var n=$("name").value; return listed(n)?cents(C.members[key(n)]):cents(C.defaultBudget);}
-  function lines(){return C.items.filter(function(i){return cart[i.id]>0;}).map(function(i){return {id:i.id,name:i.name,price:i.price,qty:cart[i.id]};});}
+  function variants(it){
+    if(it.sizes&&it.sizes.length) return it.sizes.map(function(z){return {key:it.id+"|"+z,label:z,name:it.name+" ("+z+")",size:z};});
+    return [{key:it.id,label:null,name:it.name,size:""}];
+  }
+  function lines(){
+    var out=[];
+    C.items.forEach(function(it){variants(it).forEach(function(v){
+      if(cart[v.key]>0)out.push({id:v.key,name:v.name,size:v.size,price:it.price,qty:cart[v.key]});
+    });});
+    return out;
+  }
   function total(){return lines().reduce(function(s,l){return s+cents(l.price)*l.qty;},0);}
   function nameOk(){var n=$("name").value.trim(); return n && (!C.requireListedName || listed(n));}
 
@@ -101,16 +112,21 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     $("bar").style.width=(b>0?Math.min(100,t/b*100):(t?100:0))+"%";
     var g=$("grid"); g.textContent="";
     C.items.forEach(function(it){
-      var q=cart[it.id]||0, pc=cents(it.price);
-      var m=el("button",{"aria-label":"Remove one "+it.name,text:"−"}); m.disabled=q<=0;
-      var p=el("button",{"aria-label":"Add one "+it.name,text:"+"}); p.disabled=C.open===false||pc>r;
-      m.onclick=function(){set(it.id,q-1);}; p.onclick=function(){set(it.id,q+1);};
+      var pc=cents(it.price), vs=variants(it);
+      var ctrls=vs.map(function(v){
+        var q=cart[v.key]||0;
+        var m=el("button",{"aria-label":"Remove one "+v.name,text:"\u2212"}); m.disabled=q<=0;
+        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||pc>r;
+        m.onclick=function(){set(v.key,pc,q-1);}; p.onclick=function(){set(v.key,pc,q+1);};
+        var kids=[]; if(v.label)kids.push(el("span",{class:"sz",text:v.label}));
+        kids.push(m,el("span",{class:"q",text:String(q)}),p);
+        return el("div",{class:"stepper"+(v.label?" sized":"")},kids);
+      });
       g.appendChild(el("div",{class:"card item"},[
         el("div",{class:"mono",text:it.name.charAt(0).toUpperCase()}),
         el("h3",{text:it.name}), el("div",{class:"desc",text:it.desc||""}),
-        el("div",{class:"price",text:money(pc)}),
-        el("div",{class:"stepper"},[m,el("span",{class:"q",text:String(q)}),p])
-      ]));
+        el("div",{class:"price",text:money(pc)})
+      ].concat(ctrls)));
     });
     var c=$("cart"); c.textContent=""; var ls=lines();
     if(!ls.length)c.appendChild(el("div",{class:"muted",text:"Nothing yet."}));
@@ -121,11 +137,11 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     else bn.classList.add("hide");
     $("submit").disabled=!(C.open!==false && nameOk() && ls.length && t<=b);
   }
-  function set(id,q){
-    if(q<0)return; var it=C.items.filter(function(i){return i.id===id;})[0];
-    var d=(q-(cart[id]||0))*cents(it.price);
+  function set(key,pc,q){
+    if(q<0)return;
+    var d=(q-(cart[key]||0))*pc;
     if(d>0 && total()+d>budget())return;
-    if(q===0)delete cart[id]; else cart[id]=q; $("msg").textContent=""; render();
+    if(q===0)delete cart[key]; else cart[key]=q; $("msg").textContent=""; render();
   }
   $("name").addEventListener("input",function(){
     if(total()>budget()){cart={};$("msg").className="msg err";$("msg").textContent="Cart cleared: it was over this name's budget.";}

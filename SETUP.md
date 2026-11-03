@@ -32,6 +32,7 @@ Edit `config.js` on GitHub (pencil icon) and commit. Changes go live in a minute
 - `members`: custom budgets by lowercase name, e.g. `"jane smith": 75`.
 - `requireListedName: true`: only listed names can order.
 - `open: false`: stop taking orders.
+- `sizes: ["S","M","L"]` on an item: members pick quantities per size. Leave it off for one-size items.
 
 ## Things to know
 
