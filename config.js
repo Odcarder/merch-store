@@ -24,11 +24,11 @@ window.STORE_CONFIG = {
   // images: ["images/file.jpg", ...] for photos. Each id must be unique and
   // must not change once orders exist.
   items: [
-    { category: "Drinkware & Bags", id: "owala", name: "Owala FreeSip 32 oz Water Bottle", price: 43, images: ["images/owala.jpg"], desc: "Approx. price, customized" },
-    { category: "Drinkware & Bags", id: "pint", name: "Pint Glass", price: 5, images: ["images/pint.jpg"], desc: "16 oz, approx. price" },
-    { category: "Drinkware & Bags", id: "backpack", name: "Port Authority Daily Commute Backpack", price: 30, images: ["images/backpack.jpg"], desc: "Price starts at $30" },
-    { category: "Drinkware & Bags", id: "duffel", name: "Harriton ClimaBloc Convertible Garment Duffel Bag", price: 66, images: ["images/duffel-1.jpg", "images/duffel-2.jpg"], desc: "" },
-    { category: "Drinkware & Bags", id: "toiletry", name: "Lululemon Dual-Compartment Toiletry Bag", price: 73, images: ["images/toiletry.jpg"], desc: "" },
+    { category: "Drinkware", id: "owala", name: "Owala FreeSip 32 oz Water Bottle", price: 43, images: ["images/owala.jpg"], desc: "Approx. price, customized" },
+    { category: "Drinkware", id: "pint", name: "Pint Glass", price: 5, images: ["images/pint.jpg"], desc: "16 oz, approx. price" },
+    { category: "Bags", id: "backpack", name: "Port Authority Daily Commute Backpack", price: 30, images: ["images/backpack.jpg"], desc: "Price starts at $30" },
+    { category: "Bags", id: "duffel", name: "Harriton ClimaBloc Convertible Garment Duffel Bag", price: 66, images: ["images/duffel-1.jpg", "images/duffel-2.jpg"], desc: "" },
+    { category: "Bags", id: "toiletry", name: "Lululemon Dual-Compartment Toiletry Bag", price: 73, images: ["images/toiletry.jpg"], desc: "" },
     { category: "Tops", id: "halfzip", name: "Lululemon Smooth Spacer Half Zip Colourblock", price: 124, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/halfzip-colourblock.jpg"], desc: "" },
     { category: "Tops", id: "polartec", name: "Lululemon Polartec Fleece", price: 127, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/polartec.jpg"], desc: "" },
     { category: "Tops", id: "define", name: "Lululemon Define Jacket", price: 153, sizes: ["0", "2", "4", "6", "8", "10", "12", "14"], images: ["images/define-jacket.jpg"], desc: "" },
