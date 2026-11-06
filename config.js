@@ -3,7 +3,7 @@ window.STORE_CONFIG = {
   title: "Member Merch Store",
 
   // Everyone gets this budget (in dollars) unless listed under "members" below.
-  defaultBudget: 50,
+  defaultBudget: 230,
 
   // Paste your Google Apps Script web app URL here (see README.md, step 1).
   // Leave empty to test: the page will show an order summary to copy instead.
