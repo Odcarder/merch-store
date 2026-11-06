@@ -31,7 +31,7 @@ window.STORE_CONFIG = {
     { category: "Bags", id: "toiletry", name: "Lululemon Dual-Compartment Toiletry Bag", price: 73, images: ["images/toiletry.jpg"], desc: "" },
     { category: "Tops", id: "halfzip", name: "Lululemon Smooth Spacer Half Zip Colourblock", price: 124, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/halfzip-colourblock.jpg"], desc: "" },
     { category: "Tops", id: "polartec", name: "Lululemon Polartec Fleece", price: 127, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/polartec.jpg"], desc: "" },
-    { category: "Tops", id: "define", name: "Lululemon Define Jacket", price: 153, sizes: ["0", "2", "4", "6", "8", "10", "12", "14"], images: ["images/define-jacket.jpg"], desc: "" },
+    { category: "Tops", id: "define", name: "Lululemon Define Jacket, Navy", price: 153, sizes: ["0", "2", "4", "6", "8", "10", "12", "14"], images: ["images/define-jacket-navy.jpg"], desc: "" },
     { category: "Tops", id: "quincefleece", name: "Quince Fleece Full-Zip", price: 67, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/quince-fleece.jpg"], desc: "" },
     { category: "Tops", id: "rugby", name: "Vuori Long Sleeve Cypress Rugby", price: 138, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/rugby.jpg"], desc: "" },
     { category: "Tops", id: "hoodie", name: "Champion Hoodie", price: 39, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/champion-hoodie.jpg"], desc: "" },
