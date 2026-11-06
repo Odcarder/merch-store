@@ -117,11 +117,11 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   function lines(){
     var out=[];
     C.items.forEach(function(it){variants(it).forEach(function(v){
-      if(cart[v.key]>0)out.push({id:v.key,name:v.name,size:v.size,price:it.price,qty:cart[v.key]});
+      if(cart[v.key]>0)out.push({id:v.key,name:v.name,size:v.size,price:it.price,qty:cart[v.key],exempt:!!it.budgetExempt});
     });});
     return out;
   }
-  function total(){return lines().reduce(function(s,l){return s+cents(l.price)*l.qty;},0);}
+  function total(){return lines().reduce(function(s,l){return l.exempt?s:s+cents(l.price)*l.qty;},0);}
   function emailOk(){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($("email").value.trim());}
   function nameOk(){var n=$("name").value.trim(); return n && (!C.requireListedName || listed(n));}
 
@@ -166,12 +166,12 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     var g=$("grid"); g.textContent="";
     var lastCat=null;
     C.items.forEach(function(it){
-      var pc=cents(it.price), vs=variants(it);
+      var pc=cents(it.price), bpc=it.budgetExempt?0:pc, vs=variants(it);
       var ctrls=vs.map(function(v){
         var q=cart[v.key]||0;
         var m=el("button",{"aria-label":"Remove one "+v.name,text:"\u2212"}); m.disabled=q<=0;
-        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||pc>r;
-        m.onclick=function(){set(v.key,pc,q-1);}; p.onclick=function(){set(v.key,pc,q+1);};
+        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||bpc>r;
+        m.onclick=function(){set(v.key,bpc,q-1);}; p.onclick=function(){set(v.key,bpc,q+1);};
         var kids=[]; if(v.label)kids.push(el("span",{class:"sz",text:v.label}));
         kids.push(m,el("span",{class:"q",text:String(q)}),p);
         return el("div",{class:"stepper"+(v.label?" sized":"")},kids);
@@ -180,12 +180,12 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
       g.appendChild(el("div",{class:"card item"},[
         photoBlock(it),
         el("h3",{text:it.name}), el("div",{class:"desc",text:it.desc||""}),
-        el("div",{class:"price",text:money(pc)})
+        el("div",{class:"price",text:it.budgetExempt?"Doesn't count toward your budget":money(pc)})
       ].concat(ctrls)));
     });
     var c=$("cart"); c.textContent=""; var ls=lines();
     if(!ls.length)c.appendChild(el("div",{class:"muted",text:"Nothing yet."}));
-    ls.forEach(function(l){c.appendChild(el("div",{class:"cartline"},[el("span",{text:l.qty+" × "+l.name}),el("span",{text:money(cents(l.price)*l.qty)})]));});
+    ls.forEach(function(l){c.appendChild(el("div",{class:"cartline"},[el("span",{text:l.qty+" × "+l.name}),el("span",{text:l.exempt?"No budget charge":money(cents(l.price)*l.qty)})]));});
     var bn=$("banner");
     if(C.open===false){bn.textContent="Ordering is closed.";bn.classList.remove("hide");}
     else if(C.requireListedName && $("name").value.trim() && !listed($("name").value)){bn.textContent="That name isn't on the member list. Check the spelling.";bn.classList.remove("hide");}
