@@ -1,7 +1,7 @@
 // ===== EDIT THIS FILE to change your store. =====
 window.STORE_CONFIG = {
   title: "YLJ Vol. 136 Swag Order",
-  subtitle: "Order your swag for this year! All prices include customization and are rounded up to the nearest dollar. Clothing items need a size. Your cart can't go over your budget.",
+  subtitle: "Order your swag for this year! Clothing items need a size. Your cart can't go over your budget.",
 
   // Everyone gets this budget (in dollars) unless listed under "members" below.
   defaultBudget: 230,
