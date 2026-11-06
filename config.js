@@ -43,6 +43,7 @@ window.STORE_CONFIG = {
     { category: "Accessories", id: "charger", name: "4,000 mAh Solar Portable Charger", price: 15, images: ["images/charger.jpg"], desc: "" },
     { category: "Accessories", id: "lighter-black", name: "Lighter, Black Matte with Color Image", price: 25, images: ["images/lighter-black.jpg"], desc: "" },
     { category: "Accessories", id: "lighter-brass", name: "Lighter, High Polish Brass Engraved", price: 39, images: ["images/lighter-brass.jpg"], desc: "" },
-    { category: "Accessories", id: "umbrella", name: "42-inch 3-Section Auto-Open Umbrella", price: 24, images: ["images/umbrella.jpg"], desc: "" }
+    { category: "Accessories", id: "umbrella", name: "42-inch 3-Section Auto-Open Umbrella", price: 24, images: ["images/umbrella.jpg"], desc: "" },
+    { category: "Accessories", id: "cap-tan", name: "YLJ Embroidered Cap, Tan", price: 0, budgetExempt: true, images: ["images/ylj-cap-tan.jpg"], desc: "Just for interested 3Ls" }
   ]
 };
