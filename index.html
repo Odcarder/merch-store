@@ -22,6 +22,13 @@ input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
 .item{display:flex;flex-direction:column;gap:6px}
 .mono{height:84px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700}
+.photo{height:190px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.photo img{max-width:100%;max-height:100%;object-fit:contain}
+.thumbs{display:flex;gap:6px}
+.thumbs button{width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.thumbs button[aria-current=true]{outline:2px solid var(--accent)}
+.thumbs img{width:100%;height:100%;object-fit:contain}
+.cat{grid-column:1/-1;margin:10px 0 0;font-size:18px}
 .item h3{margin:2px 0 0;font-size:16px}
 .desc{color:var(--muted);font-size:13px;min-height:18px}
 .price{font-weight:700}
@@ -49,7 +56,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
 <body>
 <div class="wrap">
   <h1 id="title">Merch Store</h1>
-  <div class="sub">Pick your items. Your cart can't go over your budget.</div>
+  <div class="sub" id="subtitle">Pick your items. Your cart can't go over your budget.</div>
   <div id="banner" class="banner hide"></div>
 
   <div id="shop" class="layout">
@@ -105,12 +112,28 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   function total(){return lines().reduce(function(s,l){return s+cents(l.price)*l.qty;},0);}
   function nameOk(){var n=$("name").value.trim(); return n && (!C.requireListedName || listed(n));}
 
+  var shown={};
+  function photoBlock(it){
+    var imgs=it.images||(it.image?[it.image]:[]);
+    var box=el("div",{class:"photo"});
+    if(!imgs.length){ box.appendChild(el("div",{text:"Photo coming soon",style:"color:#8a908b;font-size:13px"})); return box; }
+    var idx=shown[it.id]||0, main=el("img",{src:imgs[idx],alt:it.name,loading:"lazy"}); box.appendChild(main);
+    if(imgs.length<2) return box;
+    var th=el("div",{class:"thumbs"});
+    imgs.forEach(function(u,i){
+      var b=el("button",{type:"button","aria-label":"Show photo "+(i+1)+" of "+it.name,"aria-current":String(i===idx)},[el("img",{src:u,alt:""})]);
+      b.onclick=function(){ shown[it.id]=i; main.src=u; Array.prototype.forEach.call(th.children,function(c,j){c.setAttribute("aria-current",String(j===i));}); };
+      th.appendChild(b);
+    });
+    var wrap=el("div",{style:"display:flex;flex-direction:column;gap:6px"},[box,th]); return wrap;
+  }
   function render(){
-    $("title").textContent=C.title; document.title=C.title;
+    $("title").textContent=C.title; document.title=C.title; if(C.subtitle)$("subtitle").textContent=C.subtitle;
     var b=budget(), t=total(), r=b-t;
     $("budget").textContent=money(b); $("remaining").textContent=money(r); $("total").textContent=money(t);
     $("bar").style.width=(b>0?Math.min(100,t/b*100):(t?100:0))+"%";
     var g=$("grid"); g.textContent="";
+    var lastCat=null;
     C.items.forEach(function(it){
       var pc=cents(it.price), vs=variants(it);
       var ctrls=vs.map(function(v){
@@ -122,8 +145,9 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
         kids.push(m,el("span",{class:"q",text:String(q)}),p);
         return el("div",{class:"stepper"+(v.label?" sized":"")},kids);
       });
+      if(it.category && it.category!==lastCat){ g.appendChild(el("h2",{class:"cat",text:it.category})); lastCat=it.category; }
       g.appendChild(el("div",{class:"card item"},[
-        el("div",{class:"mono",text:it.name.charAt(0).toUpperCase()}),
+        photoBlock(it),
         el("h3",{text:it.name}), el("div",{class:"desc",text:it.desc||""}),
         el("div",{class:"price",text:money(pc)})
       ].concat(ctrls)));
