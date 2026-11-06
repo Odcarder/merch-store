@@ -37,18 +37,63 @@ function doPost(e) {
 
 function doGet() { return out({ok: true, status: "merch store endpoint is running"}); }
 
-function refreshTotals() {
-  var sh = sheet(ORDERS, []), n = sh.getLastRow(), agg = {};
-  if (n > 1) sh.getRange(2, 8, n - 1, 1).getValues().forEach(function (r) {
-    JSON.parse(r[0]).forEach(function (l) {
-      var a = agg[l.id] || (agg[l.id] = {name: l.name, price: l.price, qty: 0});
-      a.qty += l.qty;
-    });
+var SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
+
+function sizeRank(s) {
+  var i = SIZE_ORDER.indexOf(s);
+  if (i >= 0) return i;
+  var n = parseFloat(s);
+  return isNaN(n) ? 1000 : 100 + n;
+}
+
+// Pure function: takes every ordered line and returns the rows to show.
+// style is "h" (header), "g" (item heading), "s" (size line) or "t" (total).
+function buildTotals(allLines) {
+  var groups = {};
+  allLines.forEach(function (l) {
+    var parts = String(l.id).split("|"), base = parts[0], size = parts[1] || "";
+    var name = size ? String(l.name).replace(/\s*\([^)]*\)$/, "") : String(l.name);
+    var g = groups[base] || (groups[base] = {name: name, price: l.price, sizes: {}});
+    g.sizes[size] = (g.sizes[size] || 0) + l.qty;
   });
-  var t = sheet(TOTALS, ["Item", "Unit price", "Qty to order", "Cost"]);
-  if (t.getLastRow() > 1) t.getRange(2, 1, t.getLastRow() - 1, 4).clearContent();
-  var rows = Object.keys(agg).sort().map(function (k) { var a = agg[k]; return [a.name, a.price, a.qty, a.price * a.qty]; });
-  if (rows.length) t.getRange(2, 1, rows.length, 4).setValues(rows);
+  var rows = [["Item / size", "Unit price", "Qty to order", "Cost"]], style = ["h"], tq = 0, tc = 0;
+  Object.keys(groups).sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name); }).forEach(function (k) {
+    var g = groups[k];
+    var sizes = Object.keys(g.sizes).sort(function (a, b) { return sizeRank(a) - sizeRank(b) || a.localeCompare(b); });
+    var q = sizes.reduce(function (s, z) { return s + g.sizes[z]; }, 0);
+    tq += q; tc += q * g.price;
+    if (sizes.length === 1 && sizes[0] === "") {
+      rows.push([g.name, g.price, q, g.price * q]); style.push("g");
+    } else {
+      rows.push([g.name, "", q, g.price * q]); style.push("g");
+      sizes.forEach(function (z) {
+        rows.push(["      " + (z || "(no size)"), g.price, g.sizes[z], g.price * g.sizes[z]]); style.push("s");
+      });
+    }
+  });
+  if (rows.length > 1) { rows.push(["Total", "", tq, tc]); style.push("t"); }
+  return {rows: rows, style: style};
+}
+
+function refreshTotals() {
+  var sh = sheet(ORDERS, []), n = sh.getLastRow(), all = [];
+  if (n > 1) sh.getRange(2, 8, n - 1, 1).getValues().forEach(function (r) {
+    if (r[0]) all = all.concat(JSON.parse(r[0]));
+  });
+  var res = buildTotals(all), rows = res.rows, st = res.style;
+  var t = sheet(TOTALS, []);
+  t.clear();
+  var range = t.getRange(1, 1, rows.length, 4);
+  range.setValues(rows);
+  range.setFontWeights(st.map(function (s) { var w = (s === "s") ? "normal" : "bold"; return [w, w, w, w]; }));
+  range.setBackgrounds(st.map(function (s) {
+    var c = s === "h" ? "#d9d9d9" : s === "g" ? "#f1f1f1" : s === "t" ? "#d9ead3" : "#ffffff";
+    return [c, c, c, c];
+  }));
+  t.getRange(2, 2, Math.max(rows.length - 1, 1), 1).setNumberFormat("$#,##0.00");
+  t.getRange(2, 4, Math.max(rows.length - 1, 1), 1).setNumberFormat("$#,##0.00");
+  t.setColumnWidth(1, 340);
+  t.setFrozenRows(1);
 }
 
 function sheet(name, header) {
