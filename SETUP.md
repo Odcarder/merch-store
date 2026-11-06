@@ -36,6 +36,7 @@ Edit `config.js` on GitHub (pencil icon) and commit. Changes go live in a minute
 
 ## Things to know
 
+- Orders also record each person's email, in the last column of the Orders tab. If you update the script, redeploy it (Deploy > Manage deployments > Edit > New version).
 - Budgets are enforced in the browser. Someone technical could bypass them, so the **Orders** tab has an "Over budget?" column that flags any order above its budget.
 - There are no logins. Anyone with the link can order under any name. If that matters, use `requireListedName` and share the link only with members.
 - If you change an item's price after orders exist, earlier orders keep the price they were placed at.

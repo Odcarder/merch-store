@@ -16,9 +16,10 @@ function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
     if (!d.name || !d.lines || !d.lines.length) return out({ok: false, error: "empty order"});
-    var sh = sheet(ORDERS, ["Name", "Items", "Order total", "Budget", "Over budget?", "Submitted", "key", "json"]);
+    var sh = sheet(ORDERS, ["Name", "Items", "Order total", "Budget", "Over budget?", "Submitted", "key", "json", "Email"]);
     var summary = d.lines.map(function (l) { return l.qty + " x " + l.name; }).join(", ");
-    var row = [d.name, summary, d.total, d.budget, d.total > d.budget ? "YES" : "", new Date(), d.key, JSON.stringify(d.lines)];
+    if (sh.getRange(1, 9).getValue() === "") sh.getRange(1, 9).setValue("Email");
+    var row = [d.name, summary, d.total, d.budget, d.total > d.budget ? "YES" : "", new Date(), d.key, JSON.stringify(d.lines), String(d.email || "").slice(0, 120)];
     var last = sh.getLastRow(), at = 0;
     if (last > 1) {
       var keys = sh.getRange(2, 7, last - 1, 1).getValues();
