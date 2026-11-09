@@ -21,7 +21,7 @@ window.STORE_CONFIG = {
   requireListedName: false,
 
   // Your merchandise. Add  sizes: [...]  to any item that needs a size, and
-  // images: ["images/file.jpg", ...] for photos. Each id must be unique and
+  // images: ["images/file.jpg", ...] for photos, maxQty: 1 to limit how many one person can order. Each id must be unique and
   // must not change once orders exist.
   items: [
     { category: "Drinkware", id: "owala", name: "Owala FreeSip 32 oz Water Bottle", price: 43, images: ["images/owala.jpg"], desc: "Approx. price, customized" },
@@ -44,6 +44,6 @@ window.STORE_CONFIG = {
     { category: "Accessories", id: "lighter-black", name: "Lighter, Black Matte with Color Image", price: 25, images: ["images/lighter-black.jpg"], desc: "" },
     { category: "Accessories", id: "lighter-brass", name: "Lighter, High Polish Brass Engraved", price: 39, images: ["images/lighter-brass.jpg"], desc: "" },
     { category: "Accessories", id: "umbrella", name: "42-inch 3-Section Auto-Open Umbrella", price: 24, images: ["images/umbrella.jpg"], desc: "" },
-    { category: "Accessories", id: "cap-tan", name: "YLJ Embroidered Cap, Tan", price: 0, budgetExempt: true, images: ["images/ylj-cap-tan.jpg"], desc: "Just for interested 3Ls" }
+    { category: "Accessories", id: "cap-tan", name: "YLJ Embroidered Cap, Tan", price: 0, budgetExempt: true, maxQty: 1, images: ["images/ylj-cap-tan.jpg"], desc: "Just for interested 3Ls" }
   ]
 };

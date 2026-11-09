@@ -172,10 +172,11 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     var lastCat=null;
     C.items.forEach(function(it){
       var pc=cents(it.price), bpc=it.budgetExempt?0:pc, vs=variants(it);
+      var itemQty=vs.reduce(function(n,v){return n+(cart[v.key]||0);},0), maxed=!!it.maxQty && itemQty>=it.maxQty;
       var ctrls=vs.map(function(v){
         var q=cart[v.key]||0;
         var m=el("button",{"aria-label":"Remove one "+v.name,text:"\u2212"}); m.disabled=q<=0;
-        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||bpc>r;
+        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||bpc>r||maxed;
         m.onclick=function(){set(v.key,bpc,q-1);}; p.onclick=function(){set(v.key,bpc,q+1);};
         var kids=[]; if(v.label)kids.push(el("span",{class:"sz",text:v.label}));
         kids.push(m,el("span",{class:"q",text:String(q)}),p);
