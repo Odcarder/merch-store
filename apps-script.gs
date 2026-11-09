@@ -8,18 +8,25 @@
 // It saves one row per person (a resubmission replaces the earlier row)
 // and keeps a "To Order" tab with the total quantity of each item.
 
-var ORDERS = "Orders", TOTALS = "To Order";
+var ORDERS = "Orders", TOTALS = "To Order", SETTINGS = "Settings";
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     var d = JSON.parse(e.postData.contents);
+    if (d.action === "checkPasscode") return out(checkPasscode(d.passcode));
     if (!d.name || !d.lines || !d.lines.length) return out({ok: false, error: "empty order"});
     var sh = sheet(ORDERS, ["Name", "Items", "Order total", "Budget", "Over budget?", "Submitted", "key", "json", "Email"]);
+    var approved = false;
+    if (d.override) {
+      if (!checkPasscode(d.passcode).valid) return out({ok: false, error: "bad passcode"});
+      approved = true;
+    }
+    if (d.total > d.budget && !approved) return out({ok: false, error: "over budget"});
     var summary = d.lines.map(function (l) { return l.qty + " x " + l.name; }).join(", ");
     if (sh.getRange(1, 9).getValue() === "") sh.getRange(1, 9).setValue("Email");
-    var row = [d.name, summary, d.total, d.budget, d.total > d.budget ? "YES" : "", new Date(), d.key, JSON.stringify(d.lines), String(d.email || "").slice(0, 120)];
+    var row = [d.name, summary, d.total, d.budget, d.total > d.budget ? (approved ? "APPROVED OVERAGE" : "YES") : "", new Date(), d.key, JSON.stringify(d.lines), String(d.email || "").slice(0, 120)];
     var last = sh.getLastRow(), at = 0;
     if (last > 1) {
       var keys = sh.getRange(2, 7, last - 1, 1).getValues();
@@ -33,6 +40,30 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// Checks the manager override passcode, which lives in the "Settings" tab (cell B1).
+// Leave B1 empty to turn overrides off. After 10 wrong guesses in 15 minutes it locks.
+function checkPasscode(p) {
+  var s = sheet(SETTINGS, []);
+  if (s.getLastRow() < 1) {
+    s.getRange(1, 1, 4, 2).setValues([
+      ["Override passcode (type it in B1)", ""],
+      ["How it works", "Members who enter this code on the store page can order over their budget. Empty B1 = overrides off."],
+      ["Failed attempts (automatic)", 0],
+      ["Attempt window start (automatic)", ""]
+    ]);
+    s.setColumnWidth(1, 260); s.setColumnWidth(2, 420);
+  }
+  var real = String(s.getRange(1, 2).getValue() || "").trim();
+  var now = Date.now(), start = Number(s.getRange(4, 2).getValue()) || 0, fails = Number(s.getRange(3, 2).getValue()) || 0;
+  if (now - start > 15 * 60 * 1000) { fails = 0; start = now; }
+  if (fails >= 10) return {ok: true, valid: false, locked: true};
+  if (real && p && String(p).trim() === real) return {ok: true, valid: true};
+  s.getRange(3, 2).setValue(fails + 1);
+  s.getRange(4, 2).setValue(start || now);
+  Utilities.sleep(1500);
+  return {ok: true, valid: false, locked: false, enabled: !!real};
 }
 
 function doGet() { return out({ok: true, status: "merch store endpoint is running"}); }

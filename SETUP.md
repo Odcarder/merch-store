@@ -34,6 +34,10 @@ Edit `config.js` on GitHub (pencil icon) and commit. Changes go live in a minute
 - `open: false`: stop taking orders.
 - `sizes: ["S","M","L"]` on an item: members pick quantities per size. Leave it off for one-size items.
 
+## Manager budget overrides
+
+Members who need to go over budget click "Have a budget override code?" under the budget bar and enter a code from a manager. The code lives only in your Google Sheet, on the **Settings** tab, cell **B1** (the tab appears the first time anyone tries a code). Change B1 to change the code. Leave it empty to turn overrides off. Orders placed with a code show **APPROVED OVERAGE** in the "Over budget?" column.
+
 ## Things to know
 
 - Orders also record each person's email, in the last column of the Orders tab. If you update the script, redeploy it (Deploy > Manage deployments > Edit > New version).
