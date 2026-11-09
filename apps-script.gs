@@ -66,7 +66,7 @@ function checkPasscode(p) {
   return {ok: true, valid: false, locked: false, enabled: !!real};
 }
 
-function doGet() { return out({ok: true, status: "merch store endpoint is running"}); }
+function doGet() { return out({ok: true, status: "merch store endpoint is running", version: "override-v1"}); }
 
 var SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 
