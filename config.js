@@ -20,7 +20,7 @@ window.STORE_CONFIG = {
   // If true, only names listed in "members" can order (a simple guest list).
   requireListedName: false,
 
-  // Your merchandise. Add  sizes: [...]  to any item that needs a size, and
+  // Your merchandise. Add  sizes: [...]  (and optionally lengths: [...]) to any item that needs a size, and
   // images: ["images/file.jpg", ...] for photos, maxQty: 1 to limit how many one person can order. Each id must be unique and
   // must not change once orders exist.
   items: [
@@ -37,8 +37,8 @@ window.STORE_CONFIG = {
     { category: "Tops", id: "hoodie", name: "Champion Hoodie", price: 39, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/champion-hoodie.jpg"], desc: "" },
     { category: "Tops", id: "boyfriendcrew", name: "Quince Organic Cotton Boyfriend Crew Sweater, Navy", price: 55, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/boyfriend-crew.jpg"], desc: "" },
     { category: "Tops", id: "crewneck", name: "Quince Organic Cotton Crewneck Sweater, Navy", price: 65, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/crewneck.jpg"], desc: "" },
-    { category: "Bottoms", id: "wideleg", name: "Vuori Halo Essential Wideleg Pant", price: 133, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/wideleg.jpg"], desc: "" },
-    { category: "Bottoms", id: "seaside", name: "Vuori Seaside Sweatpant", price: 143, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/seaside.jpg"], desc: "" },
+    { category: "Bottoms", id: "wideleg", name: "Vuori Halo Essential Wideleg Pant, Women's", price: 133, sizes: ["XS", "S", "M", "L", "XL"], lengths: ["Short", "Regular", "Long"], images: ["images/wideleg.jpg"], desc: "" },
+    { category: "Bottoms", id: "seaside", name: "Vuori Seaside Sweatpant, Men's", price: 143, sizes: ["XS", "S", "M", "L", "XL"], lengths: ["Regular", "Long"], images: ["images/seaside.jpg"], desc: "" },
     { category: "Bottoms", id: "joggers", name: "Gymshark Straight-Leg Joggers, Deep Blue", price: 44, sizes: ["XS", "S", "M", "L", "XL"], images: ["images/gymshark.jpg"], desc: "" },
     { category: "Accessories", id: "charger", name: "4,000 mAh Solar Portable Charger", price: 15, images: ["images/charger.jpg"], desc: "" },
     { category: "Accessories", id: "lighter-black", name: "Lighter, Black Matte with Color Image", price: 25, images: ["images/lighter-black.jpg"], desc: "" },

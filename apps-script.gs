@@ -66,15 +66,22 @@ function checkPasscode(p) {
   return {ok: true, valid: false, locked: false, enabled: !!real};
 }
 
-function doGet() { return out({ok: true, status: "merch store endpoint is running", version: "override-v1"}); }
+function doGet() { return out({ok: true, status: "merch store endpoint is running", version: "override-v2"}); }
 
 var SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function sizeRank(s) {
-  var i = SIZE_ORDER.indexOf(s);
+  var first = String(s).split(",")[0].trim();
+  var i = SIZE_ORDER.indexOf(first);
   if (i >= 0) return i;
-  var n = parseFloat(s);
+  var n = parseFloat(first);
   return isNaN(n) ? 1000 : 100 + n;
+}
+
+function lengthRank(s) {
+  var l = (String(s).split(",")[1] || "").trim();
+  var i = ["Short", "Regular", "Long"].indexOf(l);
+  return i < 0 ? 0 : i;
 }
 
 // Pure function: takes every ordered line and returns the rows to show.
@@ -82,7 +89,7 @@ function sizeRank(s) {
 function buildTotals(allLines) {
   var groups = {};
   allLines.forEach(function (l) {
-    var parts = String(l.id).split("|"), base = parts[0], size = parts[1] || "";
+    var parts = String(l.id).split("|"), base = parts[0], size = parts.slice(1).join(", ");
     var name = size ? String(l.name).replace(/\s*\([^)]*\)$/, "") : String(l.name);
     var g = groups[base] || (groups[base] = {name: name, price: l.price, sizes: {}});
     g.sizes[size] = (g.sizes[size] || 0) + l.qty;
@@ -90,7 +97,7 @@ function buildTotals(allLines) {
   var rows = [["Item / size", "Unit price", "Qty to order", "Cost"]], style = ["h"], tq = 0, tc = 0;
   Object.keys(groups).sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name); }).forEach(function (k) {
     var g = groups[k];
-    var sizes = Object.keys(g.sizes).sort(function (a, b) { return sizeRank(a) - sizeRank(b) || a.localeCompare(b); });
+    var sizes = Object.keys(g.sizes).sort(function (a, b) { return sizeRank(a) - sizeRank(b) || lengthRank(a) - lengthRank(b) || a.localeCompare(b); });
     var q = sizes.reduce(function (s, z) { return s + g.sizes[z]; }, 0);
     tq += q; tc += q * g.price;
     if (sizes.length === 1 && sizes[0] === "") {
