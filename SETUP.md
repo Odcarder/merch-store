@@ -38,6 +38,8 @@ Edit `config.js` on GitHub (pencil icon) and commit. Changes go live in a minute
 
 Members who need to go over budget click "Have a budget override code?" under the budget bar and enter a code from a manager. The code lives only in your Google Sheet, on the **Settings** tab, cell **B1** (the tab appears the first time anyone tries a code). Change B1 to change the code. Leave it empty to turn overrides off. Orders placed with a code show **APPROVED OVERAGE** in the "Over budget?" column.
 
+**Budget-limit codes:** the Settings tab also has a table starting at row 8. Put a code in column A and the amount that person's budget rises to in column B (for example `290`). Someone using that code can spend up to that amount, and no more. Each code gets its own row, and you can delete a row to switch that code off.
+
 ## Things to know
 
 - Orders also record each person's email, in the last column of the Orders tab. If you update the script, redeploy it (Deploy > Manage deployments > Edit > New version).

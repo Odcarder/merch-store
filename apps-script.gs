@@ -19,14 +19,17 @@ function doPost(e) {
     if (!d.name || !d.lines || !d.lines.length) return out({ok: false, error: "empty order"});
     var sh = sheet(ORDERS, ["Name", "Items", "Order total", "Budget", "Over budget?", "Submitted", "key", "json", "Email"]);
     var approved = false;
+    var cap = null;
     if (d.override) {
-      if (!checkPasscode(d.passcode).valid) return out({ok: false, error: "bad passcode"});
-      approved = true;
+      var chk = checkPasscode(d.passcode);
+      if (!chk.valid) return out({ok: false, error: "bad passcode"});
+      if (chk.limit && d.total > chk.limit) return out({ok: false, error: "over limit"});
+      approved = true; cap = chk.limit || null;
     }
     if (d.total > d.budget && !approved) return out({ok: false, error: "over budget"});
     var summary = d.lines.map(function (l) { return l.qty + " x " + l.name; }).join(", ");
     if (sh.getRange(1, 9).getValue() === "") sh.getRange(1, 9).setValue("Email");
-    var row = [d.name, summary, d.total, d.budget, d.total > d.budget ? (approved ? "APPROVED OVERAGE" : "YES") : "", new Date(), d.key, JSON.stringify(d.lines), String(d.email || "").slice(0, 120)];
+    var row = [d.name, summary, d.total, d.budget, d.total > d.budget ? (approved ? "APPROVED OVERAGE" + (cap ? " (cap $" + cap + ")" : "") : "YES") : "", new Date(), d.key, JSON.stringify(d.lines), String(d.email || "").slice(0, 120)];
     var last = sh.getLastRow(), at = 0;
     if (last > 1) {
       var keys = sh.getRange(2, 7, last - 1, 1).getValues();
@@ -42,31 +45,48 @@ function doPost(e) {
   }
 }
 
-// Checks the manager override passcode, which lives in the "Settings" tab (cell B1).
-// Leave B1 empty to turn overrides off. After 10 wrong guesses in 15 minutes it locks.
+// Checks override codes, which live in the "Settings" tab:
+//   B1            = the main override code (no spending limit). Empty = off.
+//   A8:B and down = budget-limit codes: code in column A, the member's new budget in column B.
+// After 10 wrong guesses in 15 minutes it locks.
 function checkPasscode(p) {
   var s = sheet(SETTINGS, []);
   if (s.getLastRow() < 1) {
     s.getRange(1, 1, 4, 2).setValues([
       ["Override passcode (type it in B1)", ""],
-      ["How it works", "Members who enter this code on the store page can order over their budget. Empty B1 = overrides off."],
+      ["How it works", "Members who enter this code on the store page can order over their budget. Empty B1 = off."],
       ["Failed attempts (automatic)", 0],
       ["Attempt window start (automatic)", ""]
     ]);
     s.setColumnWidth(1, 260); s.setColumnWidth(2, 420);
   }
+  if (String(s.getRange(6, 1).getValue()) === "") {
+    s.getRange(6, 1, 2, 2).setValues([
+      ["Budget-limit codes", "Each row below: a code in column A and the member's new total budget in column B (for example 290)."],
+      ["Code", "Budget ($)"]
+    ]);
+  }
   var real = String(s.getRange(1, 2).getValue() || "").trim();
+  var n = Math.max(s.getLastRow() - 7, 0), limited = n ? s.getRange(8, 1, n, 2).getValues() : [];
   var now = Date.now(), start = Number(s.getRange(4, 2).getValue()) || 0, fails = Number(s.getRange(3, 2).getValue()) || 0;
   if (now - start > 15 * 60 * 1000) { fails = 0; start = now; }
   if (fails >= 10) return {ok: true, valid: false, locked: true};
-  if (real && p && String(p).trim() === real) return {ok: true, valid: true};
+  var guess = p ? String(p).trim() : "";
+  if (real && guess && guess === real) return {ok: true, valid: true, limit: null};
+  var enabled = !!real;
+  for (var i = 0; i < limited.length; i++) {
+    var code = String(limited[i][0] || "").trim(), cap = Number(limited[i][1]);
+    if (!code || !(cap > 0)) continue;
+    enabled = true;
+    if (guess && guess === code) return {ok: true, valid: true, limit: cap};
+  }
   s.getRange(3, 2).setValue(fails + 1);
   s.getRange(4, 2).setValue(start || now);
   Utilities.sleep(1500);
-  return {ok: true, valid: false, locked: false, enabled: !!real};
+  return {ok: true, valid: false, locked: false, enabled: enabled};
 }
 
-function doGet() { return out({ok: true, status: "merch store endpoint is running", version: "override-v2"}); }
+function doGet() { return out({ok: true, status: "merch store endpoint is running", version: "override-v3"}); }
 
 var SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 

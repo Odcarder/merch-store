@@ -103,7 +103,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
           <div class="ovrow"><input type="password" id="ovCode" autocomplete="off"><button type="button" class="btn sec" id="ovApply" style="margin-top:0">Apply</button></div>
           <div class="msg" id="ovMsg"></div>
         </div>
-        <div id="ovOn" class="hide"><strong>Budget override active.</strong> <button type="button" class="link" id="ovOff">Turn off</button></div>
+        <div id="ovOn" class="hide"><strong id="ovOnText">Budget override active.</strong> <button type="button" class="link" id="ovOff">Turn off</button></div>
       </div>
       <h2>Your cart</h2>
       <div id="cart"></div>
@@ -128,13 +128,15 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   var C = window.STORE_CONFIG, $ = function(i){return document.getElementById(i);};
   var cents = function(d){return Math.round(Number(d||0)*100);};
   var money = function(c){return "$"+(c/100).toFixed(2);};
-  var cart = {}, ov = {on:false, code:""};
+  var cart = {}, ov = {on:false, code:"", limit:null};
   function el(t,a,k){var e=document.createElement(t);if(a)for(var x in a){if(x==="text")e.textContent=a[x];else if(x==="class")e.className=a[x];else e.setAttribute(x,a[x]);}(k||[]).forEach(function(c){e.appendChild(c);});return e;}
   function key(n){return n.trim().toLowerCase().replace(/\s+/g," ");}
   function listed(n){return Object.prototype.hasOwnProperty.call(C.members||{},key(n));}
   function fullName(){return ($("first").value.trim()+" "+$("last").value.trim()).replace(/\s+/g," ").trim();}
   function namesOk(){return $("first").value.trim()&&$("last").value.trim();}
-  function budget(){var n=fullName(); return listed(n)?cents(C.members[key(n)]):cents(C.defaultBudget);}
+  function baseBudget(){var n=fullName(); return listed(n)?cents(C.members[key(n)]):cents(C.defaultBudget);}
+  function budget(){var b=baseBudget(); return (ov.on&&ov.limit!=null)?Math.max(b,Math.round(ov.limit*100)):b;}
+  function unlimited(){return ov.on&&ov.limit==null;}
   function variants(it){
     var sz=(it.sizes&&it.sizes.length)?it.sizes:[null], ln=(it.lengths&&it.lengths.length)?it.lengths:[null], out=[];
     sz.forEach(function(z){ln.forEach(function(l){
@@ -160,7 +162,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     if(it.lengths&&it.lengths.length) row("Length",it.lengths,"length");
     var needSize=it.sizes&&it.sizes.length&&!pk.size, needLen=it.lengths&&it.lengths.length&&!pk.length;
     var add=el("button",{type:"button",class:"btn sec",text:"Add to cart"});
-    add.disabled=!!(needSize||needLen)||C.open===false||(bpc>r&&!ov.on)||maxed;
+    add.disabled=!!(needSize||needLen)||C.open===false||(bpc>r&&!unlimited())||maxed;
     add.onclick=function(){
       var key=[it.id].concat([pk.size,pk.length].filter(Boolean)).join("|");
       set(key,bpc,(cart[key]||0)+1);
@@ -228,7 +230,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
       var ctrls=it.lengths?picker(it,vs,bpc,r,maxed,itemQty):vs.map(function(v){
         var q=cart[v.key]||0;
         var m=el("button",{"aria-label":"Remove one "+v.name,text:"\u2212"}); m.disabled=q<=0;
-        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||(bpc>r&&!ov.on)||maxed;
+        var p=el("button",{"aria-label":"Add one "+v.name,text:"+"}); p.disabled=C.open===false||(bpc>r&&!unlimited())||maxed;
         m.onclick=function(){set(v.key,bpc,q-1);}; p.onclick=function(){set(v.key,bpc,q+1);};
         var kids=[]; if(v.label)kids.push(el("span",{class:"sz",text:v.label}));
         kids.push(m,el("span",{class:"q",text:String(q)}),p);
@@ -252,18 +254,18 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     if(C.open===false){bn.textContent="Ordering is closed.";bn.classList.remove("hide");}
     else if(C.requireListedName && namesOk() && !listed(fullName())){bn.textContent="That name isn't on the member list. Check the spelling.";bn.classList.remove("hide");}
     else bn.classList.add("hide");
-    $("submit").disabled=!(C.open!==false && nameOk() && emailOk() && ls.length && (t<=b||ov.on));
+    $("submit").disabled=!(C.open!==false && nameOk() && emailOk() && ls.length && (t<=b||unlimited()));
   }
   function set(key,pc,q){
     if(q<0)return;
     var d=(q-(cart[key]||0))*pc;
-    if(d>0 && total()+d>budget() && !ov.on)return;
+    if(d>0 && total()+d>budget() && !unlimited())return;
     if(q===0)delete cart[key]; else cart[key]=q; $("msg").textContent=""; render();
   }
   $("email").addEventListener("input",render);
   ["first","last"].forEach(function(id){$(id).addEventListener("input",onNameInput);});
   function onNameInput(){
-    if(total()>budget() && !ov.on){cart={};$("msg").className="msg err";$("msg").textContent="Cart cleared: it was over this name's budget.";}
+    if(total()>budget() && !unlimited()){cart={};$("msg").className="msg err";$("msg").textContent="Cart cleared: it was over this name's budget.";}
     render();
   }
   function summaryText(name,ls,t,b){
@@ -271,7 +273,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   }
   $("submit").onclick=function(){
     var name=fullName(), email=$("email").value.trim(), ls=lines(), t=total(), b=budget();
-    if(!nameOk()||!emailOk()||!ls.length||(t>b&&!ov.on))return;
+    if(!nameOk()||!emailOk()||!ls.length||(t>b&&!unlimited()))return;
     var btn=$("submit"); btn.disabled=true; $("msg").className="msg"; $("msg").textContent="Sending…";
     var txt=summaryText(name,ls,t,b)+"\nEmail: "+email;
     function finish(sent){
@@ -283,11 +285,12 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     }
     if(!C.endpoint){finish(false);return;}
     fetch(C.endpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({name:name,email:email,key:key(name),lines:ls,total:t/100,budget:b/100,override:(ov.on&&t>b),passcode:(ov.on&&t>b)?ov.code:""})})
+      body:JSON.stringify({name:name,email:email,key:key(name),lines:ls,total:t/100,budget:baseBudget()/100,override:(ov.on&&t>baseBudget()),passcode:(ov.on&&t>baseBudget())?ov.code:""})})
       .then(function(r){return r.json();})
       .then(function(j){ if(j&&j.ok)finish(true); else { var er=new Error((j&&j.error)||"failed"); er.code=j&&j.error; throw er; } })
       .catch(function(e){btn.disabled=false;$("msg").className="msg err";
         if(e&&e.code==="bad passcode"){ovOff();$("msg").textContent="That override code is no longer valid. Ask your manager for the current one.";}
+        else if(e&&e.code==="over limit"){$("msg").textContent="This order is over the limit for your override code.";}
         else if(e&&e.code==="over budget"){$("msg").textContent="This order is over your budget. Enter an override code to continue.";}
         else $("msg").textContent="Couldn't send your order. Check your connection and try again."; render();});
   };
@@ -296,7 +299,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     (navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(function(){$("copy").textContent="Copied";},function(){var r=document.createRange();r.selectNodeContents($("summary"));var sel=getSelection();sel.removeAllRanges();sel.addRange(r);});
   };
   $("again").onclick=function(){$("done").classList.add("hide");$("shop").classList.remove("hide");$("submit").disabled=false;render();};
-  function ovOff(){ov={on:false,code:""};$("ovOn").classList.add("hide");$("ovBtn").classList.remove("hide");$("ovForm").classList.add("hide");$("ovCode").value="";$("ovMsg").textContent="";render();}
+  function ovOff(){ov={on:false,code:"",limit:null};$("ovOn").classList.add("hide");$("ovBtn").classList.remove("hide");$("ovForm").classList.add("hide");$("ovCode").value="";$("ovMsg").textContent="";render();}
   $("ovBtn").onclick=function(){
     $("ovBtn").classList.add("hide");$("ovForm").classList.remove("hide");$("ovCode").focus();
   };
@@ -313,7 +316,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
       .then(function(r){return r.json();})
       .then(function(j){
         $("ovApply").disabled=false;
-        if(j&&j.valid){ov={on:true,code:code};$("ovForm").classList.add("hide");$("ovOn").classList.remove("hide");$("ovCode").value="";m.textContent="";render();}
+        if(j&&j.valid){ov={on:true,code:code,limit:(j.limit>0?j.limit:null)};$("ovOnText").textContent=ov.limit!=null?"Budget raised to up to "+money(Math.round(ov.limit*100))+".":"Budget override active.";$("ovForm").classList.add("hide");$("ovOn").classList.remove("hide");$("ovCode").value="";m.textContent="";render();}
         else{m.className="msg err";m.textContent=j&&j.locked?"Too many attempts. Try again in 15 minutes.":(j&&j.enabled===false?"Overrides aren't turned on yet.":"That code isn't right.");}
       })
       .catch(function(){$("ovApply").disabled=false;m.className="msg err";m.textContent="Couldn't check the code. Try again.";});
