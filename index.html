@@ -71,6 +71,7 @@ h2{font-size:18px;margin:16px 0 6px}
 .muted{color:var(--muted)}
 .msg{margin-top:8px;font-size:13px}.err{color:var(--warn)}
 .hide{display:none!important}
+body.gated #shop{display:none!important}
 pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px;font-size:13px}
 </style>
 </head>
@@ -113,6 +114,14 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     </aside>
   </div>
 
+  <div id="closed" class="card hide">
+    <h2 style="margin-top:0">Ordering is closed</h2>
+    <p>Contact Otice to see if it's possible to place a late order.</p>
+    <label for="acCode">Have an access code?</label>
+    <div class="ovrow"><input type="password" id="acCode" autocomplete="off" style="max-width:260px"><button type="button" class="btn sec" id="acApply" style="margin-top:0">Enter</button></div>
+    <div class="msg" id="acMsg"></div>
+  </div>
+
   <div id="done" class="card hide">
     <h2 style="margin-top:0" id="doneTitle">Order received</h2>
     <p id="doneText"></p>
@@ -128,7 +137,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   var C = window.STORE_CONFIG, $ = function(i){return document.getElementById(i);};
   var cents = function(d){return Math.round(Number(d||0)*100);};
   var money = function(c){return "$"+(c/100).toFixed(2);};
-  var cart = {}, ov = {on:false, code:"", limit:null};
+  var cart = {}, ov = {on:false, code:"", limit:null}, gate = {closed:false, access:""};
   function el(t,a,k){var e=document.createElement(t);if(a)for(var x in a){if(x==="text")e.textContent=a[x];else if(x==="class")e.className=a[x];else e.setAttribute(x,a[x]);}(k||[]).forEach(function(c){e.appendChild(c);});return e;}
   function key(n){return n.trim().toLowerCase().replace(/\s+/g," ");}
   function listed(n){return Object.prototype.hasOwnProperty.call(C.members||{},key(n));}
@@ -217,6 +226,9 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     var wrap=el("div",{style:"display:flex;flex-direction:column;gap:6px"},[box,th]); return wrap;
   }
   function render(){
+    var gated=gate.closed&&!gate.access;
+    document.body.classList.toggle("gated",gated);
+    $("closed").classList.toggle("hide",!gated);
     $("title").textContent=C.title; document.title=C.title; if(C.subtitle)$("subtitle").textContent=C.subtitle;
     var b=budget(), t=total(), r=b-t;
     $("budget").textContent=money(b); $("remaining").textContent=r<0?"\u2212"+money(-r)+" over":money(r); $("total").textContent=money(t);
@@ -253,6 +265,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     var bn=$("banner");
     if(C.open===false){bn.textContent="Ordering is closed.";bn.classList.remove("hide");}
     else if(C.requireListedName && namesOk() && !listed(fullName())){bn.textContent="That name isn't on the member list. Check the spelling.";bn.classList.remove("hide");}
+    else if(gate.closed&&gate.access){bn.textContent="Ordering has closed. You've unlocked late ordering.";bn.classList.remove("hide");}
     else bn.classList.add("hide");
     $("submit").disabled=!(C.open!==false && nameOk() && emailOk() && ls.length && (t<=b||unlimited()));
   }
@@ -285,11 +298,12 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
     }
     if(!C.endpoint){finish(false);return;}
     fetch(C.endpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({name:name,email:email,key:key(name),lines:ls,total:t/100,budget:baseBudget()/100,override:(ov.on&&t>baseBudget()),passcode:(ov.on&&t>baseBudget())?ov.code:""})})
+      body:JSON.stringify({name:name,email:email,key:key(name),lines:ls,total:t/100,budget:baseBudget()/100,access:gate.access,override:(ov.on&&t>baseBudget()),passcode:(ov.on&&t>baseBudget())?ov.code:""})})
       .then(function(r){return r.json();})
       .then(function(j){ if(j&&j.ok)finish(true); else { var er=new Error((j&&j.error)||"failed"); er.code=j&&j.error; throw er; } })
       .catch(function(e){btn.disabled=false;$("msg").className="msg err";
         if(e&&e.code==="bad passcode"){ovOff();$("msg").textContent="That override code is no longer valid. Ask your manager for the current one.";}
+        else if(e&&e.code==="closed"){gate={closed:true,access:""};$("acMsg").textContent="";$("msg").textContent="Ordering has closed.";}
         else if(e&&e.code==="over limit"){$("msg").textContent="This order is over the limit for your override code.";}
         else if(e&&e.code==="over budget"){$("msg").textContent="This order is over your budget. Enter an override code to continue.";}
         else $("msg").textContent="Couldn't send your order. Check your connection and try again."; render();});
@@ -323,6 +337,34 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);borde
   }
   $("ovApply").onclick=applyOverride;
   $("ovCode").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();applyOverride();}});
+  function applyAccess(){
+    var code=$("acCode").value.trim(), m=$("acMsg");
+    if(!code)return;
+    $("acApply").disabled=true;m.className="msg";m.textContent="Checking\u2026";
+    fetch(C.endpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"checkAccess",access:code})})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        $("acApply").disabled=false;
+        if(j&&j.valid){gate.access=code;$("acCode").value="";m.textContent="";$("msg").textContent="";render();}
+        else{m.className="msg err";m.textContent=j&&j.locked?"Too many attempts. Try again in 15 minutes.":(j&&j.enabled===false?"Late ordering isn't available.":"That code isn't right.");}
+      })
+      .catch(function(){$("acApply").disabled=false;m.className="msg err";m.textContent="Couldn't check the code. Try again.";});
+  }
+  $("acApply").onclick=applyAccess;
+  $("acCode").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();applyAccess();}});
+  function applyStatus(j){
+    if(!j||j.ok!==true)return;
+    var off=(j.serverTime||Date.now())-Date.now();
+    if(j.open===false){gate.closed=true;}
+    else if(j.closesAt){
+      var ms=Date.parse(j.closesAt)-(Date.now()+off);
+      if(ms>0&&ms<2147000000)setTimeout(function(){gate.closed=true;render();},ms+500);
+    }
+    render();
+  }
+  if(C.endpoint){
+    fetch(C.endpoint+"?action=status&t="+Date.now()).then(function(r){return r.json();}).then(applyStatus).catch(function(){});
+  }
   render();
 })();
 </script>

@@ -16,7 +16,9 @@ function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
     if (d.action === "checkPasscode") return out(checkPasscode(d.passcode));
+    if (d.action === "checkAccess") return out(checkAccessCode(d.access));
     if (!d.name || !d.lines || !d.lines.length) return out({ok: false, error: "empty order"});
+    if (isClosed() && !(d.access && checkAccessCode(d.access).valid)) return out({ok: false, error: "closed"});
     var sh = sheet(ORDERS, ["Name", "Items", "Order total", "Budget", "Over budget?", "Submitted", "key", "json", "Email"]);
     var approved = false;
     var cap = null;
@@ -45,11 +47,8 @@ function doPost(e) {
   }
 }
 
-// Checks override codes, which live in the "Settings" tab:
-//   B1            = the main override code (no spending limit). Empty = off.
-//   A8:B and down = budget-limit codes: code in column A, the member's new budget in column B.
-// After 10 wrong guesses in 15 minutes it locks.
-function checkPasscode(p) {
+// Makes sure the Settings tab has its labels. Safe to call any time.
+function ensureSettings() {
   var s = sheet(SETTINGS, []);
   if (s.getLastRow() < 1) {
     s.getRange(1, 1, 4, 2).setValues([
@@ -66,6 +65,50 @@ function checkPasscode(p) {
       ["Code", "Budget ($)"]
     ]);
   }
+  if (String(s.getRange(1, 4).getValue()) === "") {
+    s.getRange(1, 4, 3, 1).setValues([["Ordering deadline"], ["Late access code"], ["Notes"]]);
+    s.getRange(1, 5).setNumberFormat("@").setValue("2026-11-23T23:59:00-05:00");
+    s.getRange(3, 5).setValue("Deadline: use a time like 2026-11-23T23:59:00-05:00 (-05:00 is Eastern Standard, -04:00 is Eastern Daylight). Clear E1 to keep ordering open. After the deadline the form is hidden until someone enters the late access code in E2 (leave E2 empty to allow no late orders).");
+    s.setColumnWidth(4, 160); s.setColumnWidth(5, 420);
+  }
+  return s;
+}
+
+function deadlineMs() {
+  var v = ensureSettings().getRange(1, 5).getValue();
+  if (v instanceof Date) return v.getTime();
+  var t = String(v || "").trim();
+  if (!t) return null;
+  var ms = Date.parse(t);
+  return isNaN(ms) ? null : ms;
+}
+
+function isClosed() {
+  var d = deadlineMs();
+  return d !== null && Date.now() >= d;
+}
+
+// Checks the late access code (Settings E2). Shares the wrong-guess lockout with checkPasscode.
+function checkAccessCode(p) {
+  var s = ensureSettings();
+  var real = String(s.getRange(2, 5).getValue() || "").trim();
+  var now = Date.now(), start = Number(s.getRange(4, 2).getValue()) || 0, fails = Number(s.getRange(3, 2).getValue()) || 0;
+  if (now - start > 15 * 60 * 1000) { fails = 0; start = now; }
+  if (fails >= 10) return {ok: true, valid: false, locked: true};
+  var guess = p ? String(p).trim() : "";
+  if (real && guess && guess === real) return {ok: true, valid: true};
+  s.getRange(3, 2).setValue(fails + 1);
+  s.getRange(4, 2).setValue(start || now);
+  Utilities.sleep(1500);
+  return {ok: true, valid: false, locked: false, enabled: !!real};
+}
+
+// Checks override codes, which live in the "Settings" tab:
+//   B1            = the main override code (no spending limit). Empty = off.
+//   A8:B and down = budget-limit codes: code in column A, the member's new budget in column B.
+// After 10 wrong guesses in 15 minutes it locks.
+function checkPasscode(p) {
+  var s = ensureSettings();
   var real = String(s.getRange(1, 2).getValue() || "").trim();
   var n = Math.max(s.getLastRow() - 7, 0), limited = n ? s.getRange(8, 1, n, 2).getValues() : [];
   var now = Date.now(), start = Number(s.getRange(4, 2).getValue()) || 0, fails = Number(s.getRange(3, 2).getValue()) || 0;
@@ -86,7 +129,11 @@ function checkPasscode(p) {
   return {ok: true, valid: false, locked: false, enabled: enabled};
 }
 
-function doGet() { return out({ok: true, status: "merch store endpoint is running", version: "override-v3"}); }
+function doGet() {
+  var d = deadlineMs();
+  return out({ok: true, status: "merch store endpoint is running", version: "deadline-v1",
+    open: !isClosed(), closesAt: d === null ? null : new Date(d).toISOString(), serverTime: Date.now()});
+}
 
 var SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 

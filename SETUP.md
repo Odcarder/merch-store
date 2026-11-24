@@ -40,6 +40,14 @@ Members who need to go over budget click "Have a budget override code?" under th
 
 **Budget-limit codes:** the Settings tab also has a table starting at row 8. Put a code in column A and the amount that person's budget rises to in column B (for example `290`). Someone using that code can spend up to that amount, and no more. Each code gets its own row, and you can delete a row to switch that code off.
 
+## Ordering deadline and late access
+
+The Settings tab also controls when the store closes:
+- **E1** is the deadline, as text like `2026-11-23T23:59:00-05:00` (`-05:00` is Eastern Standard, `-04:00` is Eastern Daylight). Change it to extend the deadline. Clear it to keep ordering open.
+- **E2** is the late access code. After the deadline the order form is hidden behind a screen that asks for this code. Leave E2 empty to allow no late orders. Budget override codes still work after the deadline, but only once someone has entered the access code first.
+
+The sheet's script enforces the deadline using Google's clock, so changing a device's clock or the page doesn't get around it.
+
 ## Things to know
 
 - Orders also record each person's email, in the last column of the Orders tab. If you update the script, redeploy it (Deploy > Manage deployments > Edit > New version).
